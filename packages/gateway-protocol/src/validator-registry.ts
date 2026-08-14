@@ -85,6 +85,7 @@ export const validateConversationTurnCancelParams = compile(S.ConversationTurnCa
 export const validateConversationTurnParams = compile(S.ConversationTurnParamsSchema);
 export const validatePollParams = compile(S.PollParamsSchema);
 export const validateAgentParams = compile(S.AgentParamsSchema);
+export const validateAgentCollectorMessageParams = compile(S.AgentCollectorMessageParamsSchema);
 export const validateAuditActivityListParams = compile<AuditActivityListParams>(
   S.AuditActivityListParamsSchema,
 );

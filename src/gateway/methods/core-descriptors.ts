@@ -502,6 +502,8 @@ const CORE_GATEWAY_METHOD_SPECS = [
   ["secrets.store.list", null, "operator.admin", "2026.8"],
   ["secrets.store.set", null, "operator.admin", "2026.8", { controlPlaneWrite: true }],
   ["secrets.store.delete", null, "operator.admin", "2026.8", { controlPlaneWrite: true }],
+  // Collector message injection is additive and stays on the established write-scoped session owner.
+  ["agent.collector.message", "sessions-messaging", "operator.write", "2026.8"],
 ] as const satisfies readonly CoreGatewayMethodSpecRow[];
 
 export type CoreGatewayHandlerFamily = Exclude<(typeof CORE_GATEWAY_METHOD_SPECS)[number][1], null>;
