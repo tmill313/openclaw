@@ -41,6 +41,8 @@ export const AgentControlProtocolSchemas = {
   SendParams: agent.SendParamsSchema,
   PollParams: agent.PollParamsSchema,
   AgentParams: agent.AgentParamsSchema,
+  AgentCollectorMessageParams: agent.AgentCollectorMessageParamsSchema,
+  AgentCollectorMessageResult: agent.AgentCollectorMessageResultSchema,
   AgentIdentityParams: agent.AgentIdentityParamsSchema,
   AgentIdentityResult: agent.AgentIdentityResultSchema,
   AgentWaitParams: agent.AgentWaitParamsSchema,

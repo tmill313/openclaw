@@ -345,6 +345,19 @@ export const AgentParamsSchema = closedObject({
   label: Type.Optional(SessionLabelString),
 });
 
+/** Adds one authenticated operator message to an active collector run. */
+export const AgentCollectorMessageParamsSchema = closedObject({
+  sessionKey: NonEmptyString,
+  message: NonEmptyString,
+  idempotencyKey: NonEmptyString,
+});
+
+/** Durable collector-message receipt returned for first delivery and redelivery. */
+export const AgentCollectorMessageResultSchema = closedObject({
+  delivered: Type.Literal(true),
+  sessionSeq: Type.Integer({ minimum: 1 }),
+});
+
 /** Identity lookup request for the current or selected agent/session. */
 export const AgentIdentityParamsSchema = closedObject({
   agentId: Type.Optional(NonEmptyString),
@@ -389,6 +402,8 @@ export const WakeParamsSchema = Type.Object(
 // Wire types derive directly from local schema consts so public d.ts graphs never
 // pull in the ProtocolSchemas registry.
 export type AgentEvent = Static<typeof AgentEventSchema>;
+export type AgentCollectorMessageParams = Static<typeof AgentCollectorMessageParamsSchema>;
+export type AgentCollectorMessageResult = Static<typeof AgentCollectorMessageResultSchema>;
 export type AgentIdentityParams = Static<typeof AgentIdentityParamsSchema>;
 export type AgentIdentityResult = Static<typeof AgentIdentityResultSchema>;
 export type ConversationListParams = Static<typeof ConversationListParamsSchema>;

@@ -26,14 +26,14 @@ import {
   resolveDeletedAgentIdFromSessionKey,
 } from "../session-utils.js";
 import { asWorkerInferenceControl } from "../worker-environments/inference-control.js";
-import { formatForLog } from "../ws-log.js";
+import { handleAgentCollectorMessage } from "./agent-collector-message.js";
 import { handleChatAbortRequestWithLifecycle } from "./chat-abort-handler.js";
 import { handleDirectExternalChatSend } from "./chat-send-external-entry.js";
 import { chatHandlers } from "./chat.js";
-import { resolveGatewayInflightRequest, type GatewayInflightResult } from "./inflight.js";
 import { hasTrackedActiveSessionRun } from "./session-active-runs.js";
 import { emitSessionsChanged } from "./session-change-event.js";
 import { shouldAttachPendingMessageSeq } from "./session-create-initial-turn.js";
+import { beginSessionMessagingInflight } from "./session-messaging-inflight.js";
 import { resolveAbortSessionKey } from "./sessions-abort.js";
 import { sessionCreateHandlers } from "./sessions-create.js";
 import { isAgentMainSessionKey, requireSessionKey } from "./sessions-shared.js";
@@ -45,92 +45,6 @@ import type {
   RespondFn,
 } from "./types.js";
 import { assertValidParams } from "./validation.js";
-
-type SessionSteerInflightOwner = {
-  respond: RespondFn;
-  fail: (error: unknown) => void;
-  finish: () => void;
-};
-
-function beginSessionSteerInflight(params: {
-  context: GatewayRequestContext;
-  idempotencyKey: string;
-  request: { respond: RespondFn };
-}): { kind: "handled"; done: Promise<void> } | { kind: "owner"; owner: SessionSteerInflightOwner } {
-  const originalRespond = params.request.respond;
-  const dedupeKey = `sessions.steer:${params.idempotencyKey}`;
-  const inflight = resolveGatewayInflightRequest({
-    context: params.context,
-    dedupeKey,
-    idempotencyKey: params.idempotencyKey,
-    respond: originalRespond,
-  });
-  if (inflight.kind === "handled") {
-    return inflight;
-  }
-
-  let resolveResult: (result: GatewayInflightResult) => void = () => {};
-  const work = new Promise<GatewayInflightResult>((resolve) => {
-    resolveResult = resolve;
-  });
-  let settled = false;
-  const settle = (result: GatewayInflightResult): boolean => {
-    if (settled) {
-      return false;
-    }
-    settled = true;
-    resolveResult(result);
-    return true;
-  };
-  inflight.inflightMap.set(dedupeKey, work);
-  const respond: RespondFn = (ok, payload, error, meta) => {
-    settle({
-      ok,
-      ...(payload !== undefined ? { payload } : {}),
-      ...(error ? { error } : {}),
-      ...(meta ? { meta } : {}),
-    });
-    if (meta === undefined) {
-      originalRespond(ok, payload, error);
-      return;
-    }
-    originalRespond(ok, payload, error, meta);
-  };
-
-  return {
-    kind: "owner",
-    owner: {
-      respond,
-      fail: (error) => {
-        const responseError = errorShape(ErrorCodes.UNAVAILABLE, formatForLog(error), {
-          retryable: true,
-        });
-        if (
-          settle({
-            ok: false,
-            error: responseError,
-          })
-        ) {
-          originalRespond(false, undefined, responseError);
-        }
-      },
-      finish: () => {
-        if (!settled) {
-          const error = errorShape(
-            ErrorCodes.UNAVAILABLE,
-            "sessions.steer ended before producing a response",
-            { retryable: true },
-          );
-          settle({ ok: false, error });
-          originalRespond(false, undefined, error);
-        }
-        if (inflight.inflightMap.get(dedupeKey) === work) {
-          inflight.inflightMap.delete(dedupeKey);
-        }
-      },
-    },
-  };
-}
 
 async function createAgentMainSessionForSend(params: {
   req: GatewayRequestHandlerOptions["req"];
@@ -361,9 +275,10 @@ async function handleSessionSend(params: {
   const idempotencyKey = explicitIdempotencyKey ?? randomUUID();
   const steerInflight =
     params.interruptIfActive && explicitIdempotencyKey
-      ? beginSessionSteerInflight({
+      ? beginSessionMessagingInflight({
           context: params.context,
           idempotencyKey,
+          method: "sessions.steer",
           request: params,
         })
       : undefined;
@@ -573,6 +488,9 @@ async function handleSessionSend(params: {
 }
 
 export const sessionMessagingHandlers: GatewayRequestHandlers = {
+  "agent.collector.message": async ({ params, respond, context }) => {
+    await handleAgentCollectorMessage({ params, respond, context });
+  },
   "sessions.send": async ({ req, params, respond, context, client, isWebchatConnect }) => {
     await handleSessionSend({
       method: "sessions.send",
