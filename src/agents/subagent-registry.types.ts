@@ -124,16 +124,18 @@ export type FactoryNativeShellEnvironmentPolicy = {
   include_only: string[];
 };
 
+export type FactoryNativeAuthorityProfileId = "factory_native_build_v1" | "factory_native_read_v1";
+
 export type SwarmLaunchAuthority = {
   contractVersion: 1;
-  authorityProfileId: "factory_native_build_v1";
+  authorityProfileId: FactoryNativeAuthorityProfileId;
   platform: "darwin";
   executor: "codex-app-server";
   backend: "macos-seatbelt";
   approvalPolicy: "never";
   approvalsReviewer: "auto_review";
   permissionProfile: {
-    id: "factory_native_build_v1";
+    id: FactoryNativeAuthorityProfileId;
     definition: FactoryNativePermissionProfileDefinition;
     definitionHash: `sha256:${string}`;
     platformDefaultTempAccess: "read_write";
@@ -226,7 +228,7 @@ export type SwarmEffectiveAuthorityProof = {
     runtimeWorkspaceRoots: string[];
     approvalPolicy: "never";
     approvalsReviewer: "auto_review";
-    permissionSelection: "factory_native_build_v1";
+    permissionSelection: FactoryNativeAuthorityProfileId;
     threadStartRequestHash: `sha256:${string}`;
     turnStartRequestHash: `sha256:${string}`;
   };

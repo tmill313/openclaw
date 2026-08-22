@@ -10,6 +10,7 @@ import {
   buildFactoryNativeRuntimePolicyHash,
   canonicalizeFactoryNativeAuthorityManifest,
   FACTORY_NATIVE_BASE_PATH_ENTRIES,
+  FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID,
 } from "./factory-authority-profile.js";
 import {
   buildTestFactoryNativeAuthority,
@@ -55,6 +56,37 @@ describe("factory native authority profile", () => {
     expect(authority.approvalsReviewer).toBe("auto_review");
     expect(authority.permissionProfile.definition.network).toEqual({ enabled: false });
     expect(authority.permissionProfile.platformDefaultTempAccess).toBe("read_write");
+    expect(authority.permissionProfile.definition.filesystem[":workspace_roots"]).toEqual(
+      expect.objectContaining({ ".": "write" }),
+    );
+  });
+
+  it("enforces a read-only worktree while preserving one private writable scratch root", () => {
+    const authority = buildTestFactoryNativeAuthority(
+      ROOT,
+      FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID,
+    );
+
+    expect(authority.authorityProfileId).toBe("factory_native_read_v1");
+    expect(authority.permissionProfile.id).toBe("factory_native_read_v1");
+    expect(authority.permissionProfile.definition.filesystem[":workspace_roots"]).toEqual(
+      expect.objectContaining({ ".": "read" }),
+    );
+    expect(
+      authority.permissionProfile.definition.filesystem[authority.filesystem.scratchRoot],
+    ).toBe("write");
+    expect(authority.filesystem.writableRoots).toEqual([
+      authority.cwd,
+      authority.filesystem.scratchRoot,
+    ]);
+    expect(assertFactoryNativeLaunchAuthority(authority)).toEqual(authority);
+
+    const drifted = structuredClone(authority);
+    const workspace = drifted.permissionProfile.definition.filesystem[":workspace_roots"];
+    if (typeof workspace === "object") workspace["."] = "write";
+    expect(() => assertFactoryNativeLaunchAuthority(drifted)).toThrow(
+      "does not match the enforced profile",
+    );
   });
 
   it("rejects secret-bearing environment names", () => {

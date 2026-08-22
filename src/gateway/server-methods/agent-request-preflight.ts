@@ -8,7 +8,7 @@ import {
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { parseExecApprovalFollowupApprovalId } from "../../agents/bash-tools.exec-approval-followup-state.js";
 import {
-  FACTORY_AUTHORITY_PROFILE_ID,
+  isFactoryNativeAuthorityProfileId,
   type FactoryNativeRunAuthority,
 } from "../../agents/factory-authority-profile.js";
 import { normalizeSpawnedRunMetadata } from "../../agents/spawned-context.js";
@@ -163,7 +163,9 @@ export function prepareAgentRequestPreflight(
       return undefined;
     }
     if (
-      registeredCollector.swarmLaunchAuthority?.authorityProfileId === FACTORY_AUTHORITY_PROFILE_ID
+      isFactoryNativeAuthorityProfileId(
+        registeredCollector.swarmLaunchAuthority?.authorityProfileId,
+      )
     ) {
       const launchIdentityDigest = registeredCollector.swarmLaunchIdentityDigest;
       const registeredRunId = registeredCollector.swarmRunId ?? registeredCollector.runId;

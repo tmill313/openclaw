@@ -12,9 +12,9 @@ import { resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import {
   buildFactoryNativeLaunchAuthority,
   canonicalizeFactoryNativeAuthorityManifest,
-  FACTORY_AUTHORITY_PROFILE_ID,
   FACTORY_NATIVE_DYNAMIC_TOOLS,
   FACTORY_EXPLICIT_TOOL_DENY,
+  isFactoryNativeAuthorityProfileId,
   prepareFactoryNativeAttemptPaths,
   resolveFactoryNativeAttemptPaths,
   resolveFactoryNativeGitMetadataRoot,
@@ -228,9 +228,10 @@ export const agentCollectorSpawnHandler: GatewayRequestHandlers["agent.collector
   const targetWorkspace = await fs
     .realpath(resolveAgentWorkspaceDir(runtimeConfig, targetAgentId))
     .catch(() => undefined);
+  const authorityProfileId = normalized.authorityProfileId;
   const authorityProfileValid =
     process.platform === "darwin" &&
-    normalized.authorityProfileId === FACTORY_AUTHORITY_PROFILE_ID &&
+    isFactoryNativeAuthorityProfileId(authorityProfileId) &&
     targetWorkspace === allowedCwd.root &&
     allowedCwd.cwd === allowedCwd.root;
   if (!authorityProfileValid) {
@@ -239,7 +240,7 @@ export const agentCollectorSpawnHandler: GatewayRequestHandlers["agent.collector
       undefined,
       errorShape(
         ErrorCodes.FORBIDDEN,
-        "factory_native_build_v1 requires macOS, the exact target-agent worktree, and Codex app-server's attested native permissions profile",
+        "factory native authority requires macOS, the exact target-agent worktree, and Codex app-server's attested native permissions profile",
       ),
     );
     return;
@@ -330,6 +331,7 @@ export const agentCollectorSpawnHandler: GatewayRequestHandlers["agent.collector
     return;
   }
   const authority = buildFactoryNativeLaunchAuthority({
+    authorityProfileId,
     cwd: canonicalRequest.cwd,
     workspaceRoot: allowedCwd.root,
     paths: preparedFactoryPaths,

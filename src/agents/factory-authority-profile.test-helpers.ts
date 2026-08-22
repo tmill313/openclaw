@@ -5,6 +5,7 @@ import {
   buildFactoryNativeRuntimePolicyHash,
   hashFactoryNativeAuthorityValue,
 } from "./factory-authority-profile.js";
+import type { FactoryNativeAuthorityProfileId } from "./factory-authority-profile.js";
 import type {
   SwarmEffectiveAuthorityProof,
   SwarmLaunchAuthority,
@@ -12,13 +13,17 @@ import type {
 
 const TEST_HASH = `sha256:${"1".repeat(64)}` as const;
 
-export function buildTestFactoryNativeAuthority(root: string): SwarmLaunchAuthority {
+export function buildTestFactoryNativeAuthority(
+  root: string,
+  authorityProfileId?: FactoryNativeAuthorityProfileId,
+): SwarmLaunchAuthority {
   const canonicalRoot = path.resolve(root);
   const cwd = path.join(canonicalRoot, "worktree");
   const factoryStateRoot = path.join(canonicalRoot, "factory-state");
   const attemptRoot = path.join(factoryStateRoot, "attempts", "swarm_test");
   const scratchRoot = path.join(attemptRoot, "scratch");
   return buildFactoryNativeLaunchAuthority({
+    ...(authorityProfileId ? { authorityProfileId } : {}),
     cwd,
     workspaceRoot: cwd,
     paths: {

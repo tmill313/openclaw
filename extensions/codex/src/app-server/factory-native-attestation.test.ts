@@ -91,6 +91,47 @@ function attemptParams(): EmbeddedRunAttemptParams {
 }
 
 describe("Codex native factory authority", () => {
+  it("attests the reduced read-only profile without widening its private scratch root", () => {
+    const readAuthority = buildTestFactoryNativeAuthority(
+      "/tmp/codex-factory-native-read-test",
+      "factory_native_read_v1",
+    );
+    const readBinding = { ...binding, authority: readAuthority };
+    const readRequest: CodexThreadStartParams = {
+      cwd: readAuthority.cwd,
+      model: "gpt-5.6-sol",
+      approvalPolicy: "never",
+      approvalsReviewer: "auto_review",
+      permissions: readAuthority.permissionProfile.id,
+      runtimeWorkspaceRoots: [...readAuthority.filesystem.writableRoots],
+      config: buildCodexFactoryNativeThreadConfigPatch(readAuthority),
+    };
+    const proof = assertCodexFactoryNativeThreadAttestation({
+      binding: readBinding,
+      request: readRequest,
+      response: {
+        activePermissionProfile: { id: "factory_native_read_v1" },
+        approvalPolicy: "never",
+        approvalsReviewer: "auto_review",
+        cwd: readAuthority.cwd,
+        runtimeWorkspaceRoots: [...readAuthority.filesystem.writableRoots],
+        sandbox: {
+          type: "workspaceWrite",
+          writableRoots: [readAuthority.filesystem.scratchRoot],
+          networkAccess: false,
+          excludeTmpdirEnvVar: true,
+          excludeSlashTmp: true,
+        },
+        thread: { id: "factory-read-thread" },
+        model: "gpt-5.6-sol",
+      } as CodexThreadStartResponse,
+      expectedMcpServerNames: [],
+    });
+
+    expect(proof.activePermissionProfile.id).toBe("factory_native_read_v1");
+    expect(proof.sandbox.writableRoots).toEqual([readAuthority.filesystem.scratchRoot]);
+  });
+
   it("installs a complete closed config and selects permissions without a sandbox field", () => {
     const config = buildCodexFactoryNativeThreadConfigPatch(authority, [
       "linear",

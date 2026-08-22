@@ -3,7 +3,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FACTORY_AUTHORITY_PROFILE_ID } from "../../agents/factory-authority-profile.js";
+import {
+  FACTORY_AUTHORITY_PROFILE_ID,
+  FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID,
+} from "../../agents/factory-authority-profile.js";
 import type { SubagentRunRecord } from "../../agents/subagent-registry.types.js";
 import { listCoreGatewayMethodMetadata } from "../methods/core-descriptors.js";
 import {
@@ -236,6 +239,35 @@ describe.runIf(process.platform === "darwin")("agent.collector.spawn", () => {
         agentId: "worker",
         authorityProfileId: FACTORY_AUTHORITY_PROFILE_ID,
         replayed: false,
+      }),
+    );
+  });
+
+  it("launches read-only collectors with the exact reduced native authority", async () => {
+    const { respond } = await invoke({
+      params: params({ authorityProfileId: FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID }),
+    });
+
+    expect(spawnSubagentDirect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        swarmLaunchAuthority: expect.objectContaining({
+          authorityProfileId: FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID,
+          permissionProfile: expect.objectContaining({
+            id: FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID,
+            definition: expect.objectContaining({
+              filesystem: expect.objectContaining({
+                ":workspace_roots": expect.objectContaining({ ".": "read" }),
+              }),
+            }),
+          }),
+        }),
+      }),
+      expect.anything(),
+    );
+    expect(respond).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({
+        authorityProfileId: FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID,
       }),
     );
   });

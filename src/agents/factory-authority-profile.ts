@@ -11,7 +11,21 @@ import type {
   SwarmEffectiveAuthorityProof,
 } from "./subagent-registry.types.js";
 
-export const FACTORY_AUTHORITY_PROFILE_ID = "factory_native_build_v1" as const;
+export const FACTORY_NATIVE_BUILD_AUTHORITY_PROFILE_ID = "factory_native_build_v1" as const;
+export const FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID = "factory_native_read_v1" as const;
+export const FACTORY_AUTHORITY_PROFILE_ID = FACTORY_NATIVE_BUILD_AUTHORITY_PROFILE_ID;
+export type FactoryNativeAuthorityProfileId =
+  | typeof FACTORY_NATIVE_BUILD_AUTHORITY_PROFILE_ID
+  | typeof FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID;
+
+export function isFactoryNativeAuthorityProfileId(
+  value: unknown,
+): value is FactoryNativeAuthorityProfileId {
+  return (
+    value === FACTORY_NATIVE_BUILD_AUTHORITY_PROFILE_ID ||
+    value === FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID
+  );
+}
 
 export const FACTORY_NATIVE_BASE_PATH_ENTRIES = [
   "/Library/Developer/CommandLineTools/usr/bin",
@@ -361,18 +375,23 @@ export async function resolveFactoryNativeGitMetadataRoot(params: {
 }
 
 export function buildFactoryNativePermissionProfile(params: {
+  authorityProfileId?: FactoryNativeAuthorityProfileId;
   cwd: string;
   scratchRoot: string;
   readableRoots: readonly string[];
   gitMetadataRoot: string;
 }): FactoryNativePermissionProfileDefinition {
+  const authorityProfileId = params.authorityProfileId ?? FACTORY_NATIVE_BUILD_AUTHORITY_PROFILE_ID;
   const filesystem: FactoryNativePermissionProfileDefinition["filesystem"] = {
     ":root": "deny",
     ":minimal": "read",
     ...Object.fromEntries(params.readableRoots.map((root) => [root, "read" as const])),
     [params.gitMetadataRoot]: "read",
+    ...(authorityProfileId === FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID
+      ? { [params.scratchRoot]: "write" as const }
+      : {}),
     ":workspace_roots": {
-      ".": "write",
+      ".": authorityProfileId === FACTORY_NATIVE_READ_AUTHORITY_PROFILE_ID ? "read" : "write",
       ...Object.fromEntries(
         FACTORY_NATIVE_READ_ONLY_WORKTREE_SUBPATHS.map((entry) => [entry, "read" as const]),
       ),
@@ -423,6 +442,7 @@ export function buildFactoryNativeShellEnvironmentPolicy(params: {
 }
 
 export function buildFactoryNativeLaunchAuthority(params: {
+  authorityProfileId?: FactoryNativeAuthorityProfileId;
   cwd: string;
   workspaceRoot: string;
   paths: FactoryNativeAttemptPaths;
@@ -431,6 +451,7 @@ export function buildFactoryNativeLaunchAuthority(params: {
   worktreeFenceToken: string;
   worktreeOwnershipGeneration: number;
 }): SwarmLaunchAuthority {
+  const authorityProfileId = params.authorityProfileId ?? FACTORY_NATIVE_BUILD_AUTHORITY_PROFILE_ID;
   if (!path.isAbsolute(params.cwd) || !path.isAbsolute(params.workspaceRoot)) {
     throw new Error("factory native worktree roots must be absolute");
   }
@@ -470,6 +491,7 @@ export function buildFactoryNativeLaunchAuthority(params: {
     throw new Error("factory native HOME and TMPDIR must stay inside the attempt scratch root");
   }
   const definition = buildFactoryNativePermissionProfile({
+    authorityProfileId,
     cwd: params.cwd,
     scratchRoot: params.paths.scratchRoot,
     readableRoots: params.manifest.readableRoots,
@@ -483,14 +505,14 @@ export function buildFactoryNativeLaunchAuthority(params: {
   });
   return {
     contractVersion: 1,
-    authorityProfileId: FACTORY_AUTHORITY_PROFILE_ID,
+    authorityProfileId,
     platform: "darwin",
     executor: "codex-app-server",
     backend: "macos-seatbelt",
     approvalPolicy: "never",
     approvalsReviewer: "auto_review",
     permissionProfile: {
-      id: FACTORY_AUTHORITY_PROFILE_ID,
+      id: authorityProfileId,
       definition,
       definitionHash: hashFactoryNativeAuthorityValue(definition),
       // Codex's :minimal macOS SBPL grants shared platform temp R/W. This is
@@ -537,7 +559,7 @@ export function assertFactoryNativeLaunchAuthority(value: unknown): SwarmLaunchA
   if (
     !isRecord(value) ||
     value.contractVersion !== 1 ||
-    value.authorityProfileId !== FACTORY_AUTHORITY_PROFILE_ID ||
+    !isFactoryNativeAuthorityProfileId(value.authorityProfileId) ||
     value.platform !== "darwin" ||
     value.executor !== "codex-app-server" ||
     value.backend !== "macos-seatbelt" ||
@@ -575,6 +597,7 @@ export function assertFactoryNativeLaunchAuthority(value: unknown): SwarmLaunchA
     ),
   );
   const expected = buildFactoryNativeLaunchAuthority({
+    authorityProfileId: authority.authorityProfileId,
     cwd: authority.cwd,
     workspaceRoot: authority.workspaceRoot,
     paths: {
