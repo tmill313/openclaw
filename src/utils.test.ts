@@ -17,6 +17,7 @@ import {
   shortenHomeInString,
   shortenHomePath,
   sleep,
+  truncateForDisplay,
 } from "./utils.js";
 
 describe("ensureDir", () => {
@@ -227,6 +228,27 @@ describe("shortenHomePath", () => {
       });
     },
   );
+});
+
+describe("truncateForDisplay", () => {
+  it("returns input shorter than the maximum unchanged", () => {
+    expect(truncateForDisplay("open", 5)).toBe("open");
+  });
+
+  it("returns input exactly at the maximum unchanged", () => {
+    expect(truncateForDisplay("openclaw", 8)).toBe("openclaw");
+  });
+
+  it("truncates long input to the maximum with one ellipsis", () => {
+    const result = truncateForDisplay("openclaw", 5);
+
+    expect(result).toBe("open…");
+    expect(result).toHaveLength(5);
+  });
+
+  it("throws a RangeError when the maximum is below one", () => {
+    expect(() => truncateForDisplay("openclaw", 0)).toThrow(RangeError);
+  });
 });
 
 describe("shortenHomeInString", () => {

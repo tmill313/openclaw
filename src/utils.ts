@@ -111,6 +111,13 @@ export function shortenHomePath(input: string): string {
   return shortenPathWithHome(input, display);
 }
 
+export function truncateForDisplay(input: string, max: number): string {
+  if (max < 1) {
+    throw new RangeError("max must be at least 1");
+  }
+  return input.length <= max ? input : `${input.slice(0, max - 1)}…`;
+}
+
 /** Replaces all effective-home occurrences inside a diagnostic string. */
 export function shortenHomeInString(input: string): string {
   if (!input) {
