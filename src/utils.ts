@@ -26,6 +26,14 @@ export function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+/** Clamps a finite percentage to the inclusive 0-100 range. */
+export function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return clampNumber(value, 0, 100);
+}
+
 /** Checks whether a finite number is within a finite inclusive min/max range. */
 export function isWithinRange(value: number, min: number, max: number): boolean {
   if (min > max) {
