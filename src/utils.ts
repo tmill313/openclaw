@@ -26,6 +26,17 @@ export function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+/** Checks whether a finite number is within a finite inclusive min/max range. */
+export function isWithinRange(value: number, min: number, max: number): boolean {
+  if (min > max) {
+    throw new RangeError("min must be less than or equal to max");
+  }
+  if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max)) {
+    return false;
+  }
+  return value >= min && value <= max;
+}
+
 /** Floors a number before clamping it to an inclusive min/max range. */
 export function clampInt(value: number, min: number, max: number): number {
   return clampNumber(Math.floor(value), min, max);
