@@ -26,6 +26,11 @@ export function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+/** Clamps a finite number to an inclusive percentage range. */
+export function clampPercent(value: number): number {
+  return Number.isFinite(value) ? clampNumber(value, 0, 100) : 0;
+}
+
 /** Floors a number before clamping it to an inclusive min/max range. */
 export function clampInt(value: number, min: number, max: number): number {
   return clampNumber(Math.floor(value), min, max);

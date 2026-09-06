@@ -8,6 +8,7 @@ import { withTempDir } from "./test-helpers/temp-dir.js";
 import { withEnv } from "./test-utils/env.js";
 import {
   CONFIG_DIR,
+  clampPercent,
   ensureDir,
   normalizeE164,
   pinConfigDir,
@@ -18,6 +19,21 @@ import {
   shortenHomePath,
   sleep,
 } from "./utils.js";
+
+describe("clampPercent", () => {
+  it.each<[string, number, number]>([
+    ["keeps an interior value", 42, 42],
+    ["keeps the lower boundary", 0, 0],
+    ["keeps the upper boundary", 100, 100],
+    ["clamps a value below zero", -1, 0],
+    ["clamps a value above 100", 101, 100],
+    ["returns zero for NaN", Number.NaN, 0],
+    ["returns zero for positive infinity", Number.POSITIVE_INFINITY, 0],
+    ["returns zero for negative infinity", Number.NEGATIVE_INFINITY, 0],
+  ])("%s", (_name, value, expected) => {
+    expect(clampPercent(value)).toBe(expected);
+  });
+});
 
 describe("ensureDir", () => {
   it("creates nested directory", async () => {
