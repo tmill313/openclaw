@@ -8,6 +8,7 @@ import { withTempDir } from "./test-helpers/temp-dir.js";
 import { withEnv } from "./test-utils/env.js";
 import {
   CONFIG_DIR,
+  clampPercent,
   ensureDir,
   isWithinRange,
   normalizeE164,
@@ -27,6 +28,21 @@ describe("ensureDir", () => {
       await ensureDir(target);
       expect(fs.existsSync(target)).toBe(true);
     });
+  });
+});
+
+describe("clampPercent", () => {
+  it.each([
+    { description: "an interior value", value: 42, expected: 42 },
+    { description: "the lower bound", value: 0, expected: 0 },
+    { description: "the upper bound", value: 100, expected: 100 },
+    { description: "a value below the range", value: -1, expected: 0 },
+    { description: "a value above the range", value: 101, expected: 100 },
+    { description: "NaN", value: Number.NaN, expected: 0 },
+    { description: "positive infinity", value: Number.POSITIVE_INFINITY, expected: 0 },
+    { description: "negative infinity", value: Number.NEGATIVE_INFINITY, expected: 0 },
+  ])("returns $expected for $description", ({ value, expected }) => {
+    expect(clampPercent(value)).toBe(expected);
   });
 });
 
