@@ -9,6 +9,7 @@ import { withEnv } from "./test-utils/env.js";
 import {
   CONFIG_DIR,
   ensureDir,
+  isWithinRange,
   normalizeE164,
   pinConfigDir,
   resolveConfigDir,
@@ -26,6 +27,29 @@ describe("ensureDir", () => {
       await ensureDir(target);
       expect(fs.existsSync(target)).toBe(true);
     });
+  });
+});
+
+describe("isWithinRange", () => {
+  it.each([
+    { description: "an interior value", value: 5, expected: true },
+    { description: "the minimum boundary", value: 1, expected: true },
+    { description: "the maximum boundary", value: 10, expected: true },
+    { description: "a value below the range", value: 0, expected: false },
+    { description: "a value above the range", value: 11, expected: false },
+    { description: "NaN", value: Number.NaN, expected: false },
+    { description: "positive infinity", value: Number.POSITIVE_INFINITY, expected: false },
+    { description: "negative infinity", value: Number.NEGATIVE_INFINITY, expected: false },
+  ])("returns $expected for $description", ({ value, expected }) => {
+    expect(isWithinRange(value, 1, 10)).toBe(expected);
+  });
+
+  it("throws RangeError when min exceeds max", () => {
+    expect(() => isWithinRange(2, 3, 1)).toThrow(RangeError);
+  });
+
+  it("validates the range before checking value finiteness", () => {
+    expect(() => isWithinRange(Number.NaN, 2, 1)).toThrow(RangeError);
   });
 });
 
