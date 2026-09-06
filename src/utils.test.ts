@@ -44,6 +44,15 @@ describe("isWithinRange", () => {
     expect(isWithinRange(value, 1, 10)).toBe(expected);
   });
 
+  it.each([
+    { description: "a NaN minimum", min: Number.NaN, max: 10 },
+    { description: "a negative-infinite minimum", min: Number.NEGATIVE_INFINITY, max: 10 },
+    { description: "a NaN maximum", min: 1, max: Number.NaN },
+    { description: "a positive-infinite maximum", min: 1, max: Number.POSITIVE_INFINITY },
+  ])("returns false for $description", ({ min, max }) => {
+    expect(isWithinRange(5, min, max)).toBe(false);
+  });
+
   it("throws RangeError when min exceeds max", () => {
     expect(() => isWithinRange(2, 3, 1)).toThrow(RangeError);
   });
