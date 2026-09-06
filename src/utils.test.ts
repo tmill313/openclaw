@@ -22,7 +22,7 @@ import {
 
 describe("clampPercent", () => {
   it.each<[string, number, number]>([
-    ["keeps an interior value", 42, 42],
+    ["keeps an interior value", 50, 50],
     ["keeps the lower boundary", 0, 0],
     ["keeps the upper boundary", 100, 100],
     ["clamps a value below zero", -1, 0],
