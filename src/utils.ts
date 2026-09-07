@@ -26,6 +26,17 @@ export function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+/** Rounds a number to the nearest positive finite step. */
+export function roundToStep(value: number, step: number): number {
+  if (!Number.isFinite(step) || step <= 0) {
+    throw new RangeError("step must be a finite positive number");
+  }
+  if (!Number.isFinite(value)) {
+    return value;
+  }
+  return Math.round(value / step) * step;
+}
+
 /** Clamps a finite percentage to the inclusive 0-100 range. */
 export function clampPercent(value: number): number {
   if (!Number.isFinite(value)) {

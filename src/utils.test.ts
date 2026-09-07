@@ -16,6 +16,7 @@ import {
   resolveConfigDir,
   resolveHomeDir,
   resolveUserPath,
+  roundToStep,
   shortenHomeInString,
   shortenHomePath,
   sleep,
@@ -28,6 +29,45 @@ describe("ensureDir", () => {
       await ensureDir(target);
       expect(fs.existsSync(target)).toBe(true);
     });
+  });
+});
+
+describe("roundToStep", () => {
+  it.each([
+    { description: "down", value: 2.2, step: 0.5, expected: 2 },
+    { description: "up", value: 2.4, step: 0.5, expected: 2.5 },
+    { description: "an exact multiple", value: 6, step: 2, expected: 6 },
+    { description: "a negative value", value: -4.5, step: 1, expected: -4 },
+  ])("rounds $description", ({ value, step, expected }) => {
+    expect(roundToStep(value, step)).toBe(expected);
+  });
+
+  it.each([
+    { description: "NaN", value: Number.NaN },
+    { description: "positive infinity", value: Number.POSITIVE_INFINITY },
+    { description: "negative infinity", value: Number.NEGATIVE_INFINITY },
+  ])("passes through $description", ({ value }) => {
+    expect(roundToStep(value, 1)).toBe(value);
+  });
+
+  it.each([
+    { description: "zero", step: 0 },
+    { description: "a negative number", step: -1 },
+    { description: "NaN", step: Number.NaN },
+    { description: "positive infinity", step: Number.POSITIVE_INFINITY },
+    { description: "negative infinity", step: Number.NEGATIVE_INFINITY },
+  ])("rejects $description as a step", ({ step }) => {
+    expect(() => roundToStep(5, step)).toThrow(RangeError);
+  });
+
+  it.each([
+    { value: Number.NaN, step: 0 },
+    { value: Number.POSITIVE_INFINITY, step: -1 },
+    { value: Number.NEGATIVE_INFINITY, step: Number.NaN },
+    { value: Number.NaN, step: Number.POSITIVE_INFINITY },
+    { value: Number.POSITIVE_INFINITY, step: Number.NEGATIVE_INFINITY },
+  ])("validates step $step before passing through value $value", ({ value, step }) => {
+    expect(() => roundToStep(value, step)).toThrow(RangeError);
   });
 });
 
