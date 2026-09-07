@@ -26,6 +26,14 @@ export function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+/** Converts each space-delimited word to title case while preserving whitespace. */
+export function titleCase(input: string): string {
+  return input
+    .split(" ")
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : word))
+    .join(" ");
+}
+
 /** Rounds a number to the nearest positive finite step. */
 export function roundToStep(value: number, step: number): number {
   if (!Number.isFinite(step) || step <= 0) {

@@ -20,6 +20,7 @@ import {
   shortenHomeInString,
   shortenHomePath,
   sleep,
+  titleCase,
 } from "./utils.js";
 
 describe("ensureDir", () => {
@@ -29,6 +30,26 @@ describe("ensureDir", () => {
       await ensureDir(target);
       expect(fs.existsSync(target)).toBe(true);
     });
+  });
+});
+
+describe("titleCase", () => {
+  it.each([
+    { description: "lowercase words", input: "hello world", expected: "Hello World" },
+    { description: "uppercase words", input: "HELLO WORLD", expected: "Hello World" },
+    {
+      description: "repeated internal spaces",
+      input: "hello  world",
+      expected: "Hello  World",
+    },
+    {
+      description: "leading and trailing spaces",
+      input: "  hello world  ",
+      expected: "  Hello World  ",
+    },
+    { description: "an empty string", input: "", expected: "" },
+  ])("converts $description", ({ input, expected }) => {
+    expect(titleCase(input)).toBe(expected);
   });
 });
 
