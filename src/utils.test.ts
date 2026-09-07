@@ -13,6 +13,7 @@ import {
   isWithinRange,
   normalizeE164,
   pinConfigDir,
+  pluralize,
   resolveConfigDir,
   resolveHomeDir,
   resolveUserPath,
@@ -20,6 +21,25 @@ import {
   shortenHomePath,
   sleep,
 } from "./utils.js";
+
+describe("pluralize", () => {
+  it.each([
+    { count: 1, singular: "item", expected: "1 item" },
+    { count: 0, singular: "item", expected: "0 items" },
+    { count: 2, singular: "item", expected: "2 items" },
+    { count: -1, singular: "item", expected: "-1 items" },
+    { count: 2, singular: "person", plural: "people", expected: "2 people" },
+  ])("formats $count as $expected", ({ count, singular, plural, expected }) => {
+    expect(pluralize(count, singular, plural)).toBe(expected);
+  });
+
+  it.each([1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    "rejects the invalid count %s",
+    (count) => {
+      expect(() => pluralize(count, "item")).toThrow(RangeError);
+    },
+  );
+});
 
 describe("ensureDir", () => {
   it("creates nested directory", async () => {

@@ -26,6 +26,14 @@ export function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+/** Formats a finite integer count with its singular or plural label. */
+export function pluralize(count: number, singular: string, plural?: string): string {
+  if (!Number.isFinite(count) || !Number.isInteger(count)) {
+    throw new RangeError("count must be a finite integer");
+  }
+  return `${count} ${count === 1 ? singular : (plural ?? `${singular}s`)}`;
+}
+
 /** Clamps a finite percentage to the inclusive 0-100 range. */
 export function clampPercent(value: number): number {
   if (!Number.isFinite(value)) {
