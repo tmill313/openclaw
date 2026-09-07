@@ -10,6 +10,7 @@ import {
   CONFIG_DIR,
   clampPercent,
   ensureDir,
+  isBlank,
   isWithinRange,
   normalizeE164,
   pinConfigDir,
@@ -30,6 +31,18 @@ describe("ensureDir", () => {
       await ensureDir(target);
       expect(fs.existsSync(target)).toBe(true);
     });
+  });
+});
+
+describe("isBlank", () => {
+  it.each([
+    { description: "an empty string", input: "", expected: true },
+    { description: "a single space", input: " ", expected: true },
+    { description: "a tab and newline", input: "\t\n", expected: true },
+    { description: "a surrounded non-space character", input: " a ", expected: false },
+    { description: "a plain word", input: "hello", expected: false },
+  ])("returns $expected for $description", ({ input, expected }) => {
+    expect(isBlank(input)).toBe(expected);
   });
 });
 

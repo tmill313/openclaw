@@ -26,6 +26,11 @@ export function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+/** Checks whether a string is empty or contains only whitespace. */
+export function isBlank(input: string): boolean {
+  return input.trim().length === 0;
+}
+
 /** Converts each space-delimited word to title case while preserving whitespace. */
 export function titleCase(input: string): string {
   return input
