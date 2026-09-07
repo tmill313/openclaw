@@ -26,6 +26,17 @@ export function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+/** Rounds a finite number to the nearest positive finite step. */
+export function roundToStep(value: number, step: number): number {
+  if (!Number.isFinite(step) || step <= 0) {
+    throw new RangeError("step must be a positive finite number");
+  }
+  if (!Number.isFinite(value)) {
+    return value;
+  }
+  return Math.round(value / step) * step;
+}
+
 /** Checks whether a finite number is within a finite inclusive min/max range. */
 export function isWithinRange(value: number, min: number, max: number): boolean {
   if (min > max) {

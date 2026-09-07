@@ -15,6 +15,7 @@ import {
   resolveConfigDir,
   resolveHomeDir,
   resolveUserPath,
+  roundToStep,
   shortenHomeInString,
   shortenHomePath,
   sleep,
@@ -60,6 +61,45 @@ describe("isWithinRange", () => {
   it("validates the range before checking value finiteness", () => {
     expect(() => isWithinRange(Number.NaN, 2, 1)).toThrow(RangeError);
   });
+});
+
+describe("roundToStep", () => {
+  it.each([
+    { description: "rounds down", value: 7, step: 5, expected: 5 },
+    { description: "rounds up", value: 8, step: 5, expected: 10 },
+    { description: "preserves exact multiples", value: 10, step: 5, expected: 10 },
+    { description: "rounds negative values", value: -8, step: 5, expected: -10 },
+  ])("$description", ({ value, step, expected }) => {
+    expect(roundToStep(value, step)).toBe(expected);
+  });
+
+  it.each([
+    { description: "NaN", value: Number.NaN },
+    { description: "positive infinity", value: Number.POSITIVE_INFINITY },
+    { description: "negative infinity", value: Number.NEGATIVE_INFINITY },
+  ])("passes through $description", ({ value }) => {
+    expect(roundToStep(value, 5)).toBe(value);
+  });
+
+  it.each([
+    { description: "zero", value: 1, step: 0 },
+    { description: "a negative number", value: 1, step: -1 },
+    { description: "NaN", value: 1, step: Number.NaN },
+    { description: "positive infinity", value: 1, step: Number.POSITIVE_INFINITY },
+    { description: "negative infinity", value: 1, step: Number.NEGATIVE_INFINITY },
+  ])("rejects $description as a step", ({ value, step }) => {
+    expect(() => roundToStep(value, step)).toThrow(RangeError);
+  });
+
+  it.each([
+    { description: "a zero step", value: Number.NaN, step: 0 },
+    { description: "a negative step", value: Number.POSITIVE_INFINITY, step: -1 },
+  ])(
+    "validates $description before passing through a non-finite value",
+    ({ value, step }) => {
+      expect(() => roundToStep(value, step)).toThrow(RangeError);
+    },
+  );
 });
 
 describe("sleep", () => {
