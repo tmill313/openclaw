@@ -10,6 +10,7 @@ import {
   CONFIG_DIR,
   clampPercent,
   ensureDir,
+  formatElapsed,
   isBlank,
   isWithinRange,
   normalizeE164,
@@ -350,6 +351,30 @@ describe("shortenHomePath", () => {
       });
     },
   );
+});
+
+describe("formatElapsed", () => {
+  it.each([
+    { ms: 65_000, expected: "1m 5s" },
+    { ms: 3_723_000, expected: "1h 2m" },
+    { ms: 90_061_000, expected: "1d 1h" },
+    { ms: 500, expected: "0s" },
+    { ms: 59_000, expected: "59s" },
+    { ms: 60_000, expected: "1m" },
+    { ms: 3_600_000, expected: "1h" },
+    { ms: 86_400_000, expected: "1d" },
+  ])("formats $ms milliseconds as $expected", ({ ms, expected }) => {
+    expect(formatElapsed(ms)).toBe(expected);
+  });
+
+  it.each([
+    { description: "a negative duration", ms: -1 },
+    { description: "NaN", ms: Number.NaN },
+    { description: "positive infinity", ms: Number.POSITIVE_INFINITY },
+    { description: "negative infinity", ms: Number.NEGATIVE_INFINITY },
+  ])("rejects $description", ({ ms }) => {
+    expect(() => formatElapsed(ms)).toThrow(RangeError);
+  });
 });
 
 describe("shortenHomeInString", () => {

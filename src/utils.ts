@@ -154,6 +154,27 @@ export function shortenHomePath(input: string): string {
   return shortenPathWithHome(input, display);
 }
 
+/** Formats elapsed milliseconds as the two largest non-zero units. */
+export function formatElapsed(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) {
+    throw new RangeError("ms must be a finite non-negative number");
+  }
+
+  const totalSeconds = Math.floor(ms / 1000);
+  const units = [
+    { value: Math.floor(totalSeconds / 86_400), suffix: "d" },
+    { value: Math.floor((totalSeconds % 86_400) / 3600), suffix: "h" },
+    { value: Math.floor((totalSeconds % 3600) / 60), suffix: "m" },
+    { value: totalSeconds % 60, suffix: "s" },
+  ];
+  const parts = units
+    .filter(({ value }) => value > 0)
+    .slice(0, 2)
+    .map(({ value, suffix }) => `${value}${suffix}`);
+
+  return parts.join(" ") || "0s";
+}
+
 /** Replaces all effective-home occurrences inside a diagnostic string. */
 export function shortenHomeInString(input: string): string {
   if (!input) {
