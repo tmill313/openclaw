@@ -154,6 +154,35 @@ export function shortenHomePath(input: string): string {
   return shortenPathWithHome(input, display);
 }
 
+/** Formats elapsed milliseconds using the two largest non-zero duration units. */
+export function formatElapsed(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) {
+    throw new RangeError("elapsed duration must be a finite non-negative number");
+  }
+
+  let remainingSeconds = Math.floor(ms / 1000);
+  const parts: string[] = [];
+  const units = [
+    [86_400, "d"],
+    [3_600, "h"],
+    [60, "m"],
+    [1, "s"],
+  ] as const;
+
+  for (const [unitSeconds, suffix] of units) {
+    const value = Math.floor(remainingSeconds / unitSeconds);
+    if (value > 0) {
+      parts.push(`${value}${suffix}`);
+      if (parts.length === 2) {
+        break;
+      }
+    }
+    remainingSeconds %= unitSeconds;
+  }
+
+  return parts.length > 0 ? parts.join(" ") : "0s";
+}
+
 /** Masks recognized secret-shaped tokens while preserving all surrounding text. */
 export function redactSecrets(input: string): string {
   // Standalone token grammars: OpenAI sk- + 20 alphanumerics; GitHub ghp_/gho_/ghs_
