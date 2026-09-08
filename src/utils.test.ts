@@ -10,6 +10,7 @@ import {
   CONFIG_DIR,
   clampPercent,
   ensureDir,
+  formatElapsed,
   isBlank,
   isWithinRange,
   normalizeE164,
@@ -351,6 +352,36 @@ describe("shortenHomePath", () => {
       });
     },
   );
+});
+
+describe("formatElapsed", () => {
+  it.each([
+    { description: "minutes and seconds", ms: 65_000, expected: "1m 5s" },
+    { description: "hours and minutes", ms: 3_723_000, expected: "1h 2m" },
+    { description: "days and hours", ms: 90_061_000, expected: "1d 1h" },
+    { description: "less than one second", ms: 500, expected: "0s" },
+    { description: "seconds only", ms: 59_000, expected: "59s" },
+    { description: "just below 60 seconds", ms: 59_999, expected: "59s" },
+    { description: "exactly 60 seconds", ms: 60_000, expected: "1m" },
+    { description: "just above 60 seconds", ms: 60_001, expected: "1m" },
+    { description: "just below 60 minutes", ms: 3_599_999, expected: "59m 59s" },
+    { description: "exactly 60 minutes", ms: 3_600_000, expected: "1h" },
+    { description: "just above 60 minutes", ms: 3_600_001, expected: "1h" },
+    { description: "just below 24 hours", ms: 86_399_999, expected: "23h 59m" },
+    { description: "exactly 24 hours", ms: 86_400_000, expected: "1d" },
+    { description: "just above 24 hours", ms: 86_400_001, expected: "1d" },
+  ])("formats $description as $expected", ({ ms, expected }) => {
+    expect(formatElapsed(ms)).toBe(expected);
+  });
+
+  it.each([
+    { description: "a negative duration", ms: -1 },
+    { description: "NaN", ms: Number.NaN },
+    { description: "positive infinity", ms: Number.POSITIVE_INFINITY },
+    { description: "negative infinity", ms: Number.NEGATIVE_INFINITY },
+  ])("rejects $description", ({ ms }) => {
+    expect(() => formatElapsed(ms)).toThrow(RangeError);
+  });
 });
 
 describe("redactSecrets", () => {
