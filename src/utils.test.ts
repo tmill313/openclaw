@@ -14,6 +14,7 @@ import {
   isWithinRange,
   normalizeE164,
   pinConfigDir,
+  redactSecrets,
   resolveConfigDir,
   resolveHomeDir,
   resolveUserPath,
@@ -350,6 +351,74 @@ describe("shortenHomePath", () => {
       });
     },
   );
+});
+
+describe("redactSecrets", () => {
+  const openAiSecret = `sk-${"A".repeat(20)}`;
+  const ghpSecret = `ghp_${"B".repeat(20)}`;
+  const ghoSecret = `gho_${"C".repeat(20)}`;
+  const ghsSecret = `ghs_${"D".repeat(20)}`;
+  const githubPatSecret = `github_pat_${"E_".repeat(10)}`;
+  const slackSecret = `xoxb-${"f-".repeat(5)}`;
+  const awsAccessKey = `AKIA${"A1".repeat(8)}`;
+
+  it.each([
+    { label: "OpenAI", input: openAiSecret, expected: "sk-A…" },
+    { label: "GitHub ghp", input: ghpSecret, expected: "ghp_…" },
+    { label: "GitHub gho", input: ghoSecret, expected: "gho_…" },
+    { label: "GitHub ghs", input: ghsSecret, expected: "ghs_…" },
+    { label: "GitHub fine-grained PAT", input: githubPatSecret, expected: "gith…" },
+    { label: "Slack", input: slackSecret, expected: "xoxb…" },
+    { label: "AWS access key", input: awsAccessKey, expected: "AKIA…" },
+  ])("redacts a $label token to its first four characters", ({ input, expected }) => {
+    expect(redactSecrets(input)).toBe(expected);
+  });
+
+  it("redacts a case-insensitive bearer value without changing the header bytes", () => {
+    expect(redactSecrets("aUtHoRiZaTiOn:\tBeArEr  abcdEF12._~+/=-")).toBe(
+      "aUtHoRiZaTiOn:\tBeArEr  abcd…",
+    );
+  });
+
+  it("redacts multiple secrets in one line", () => {
+    expect(redactSecrets(`openai=${openAiSecret}; github=${ghpSecret}`)).toBe(
+      "openai=sk-A…; github=ghp_…",
+    );
+  });
+
+  it("preserves punctuation immediately surrounding secrets", () => {
+    expect(redactSecrets(`(${slackSecret}),[${awsAccessKey}]`)).toBe("(xoxb…),[AKIA…]");
+  });
+
+  it("returns secret-free multiline Unicode text byte-identically", () => {
+    const input = "first line\nemoji: 🦞 café\n\tpunctuation: []{}!?";
+
+    expect(redactSecrets(input)).toBe(input);
+  });
+
+  it.each([
+    `ask-${"A".repeat(20)}`,
+    `sk-${"A".repeat(20)}_tail`,
+    `prefixghp_${"B".repeat(20)}`,
+    `gho_${"C".repeat(20)}-suffix`,
+    `xoxb-${"d".repeat(10)}_tail`,
+    `XAKIA${"A1".repeat(8)}`,
+    `AKIA${"A1".repeat(8)}Z`,
+  ])("does not partially redact a token with an adjacent boundary character: %s", (input) => {
+    expect(redactSecrets(input)).toBe(input);
+  });
+
+  it.each([
+    `sk-${"A".repeat(19)}`,
+    `ghp_${"B".repeat(19)}`,
+    `gho_${"C".repeat(19)}`,
+    `ghs_${"D".repeat(19)}`,
+    `github_pat_${"E".repeat(19)}`,
+    `xoxb-${"f".repeat(9)}`,
+    "Authorization: Bearer abc1234",
+  ])("leaves a below-floor value unchanged: %s", (input) => {
+    expect(redactSecrets(input)).toBe(input);
+  });
 });
 
 describe("shortenHomeInString", () => {

@@ -154,6 +154,24 @@ export function shortenHomePath(input: string): string {
   return shortenPathWithHome(input, display);
 }
 
+/** Masks recognized secret-shaped tokens while preserving all surrounding text. */
+export function redactSecrets(input: string): string {
+  // Standalone token grammars: OpenAI sk- + 20 alphanumerics; GitHub ghp_/gho_/ghs_
+  // + 20 alphanumerics or github_pat_ + 20 alphanumerics/underscores; Slack xox<letter>-
+  // + 10 alphanumerics/dashes; and AWS AKIA + exactly 16 uppercase alphanumerics.
+  const redactedTokens = input.replace(
+    /(?<![A-Za-z0-9_-])(?:sk-[A-Za-z0-9]{20,}|(?:ghp_|gho_|ghs_)[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[A-Za-z]-[A-Za-z0-9-]{10,}|AKIA[A-Z0-9]{16})(?![A-Za-z0-9_-])/g,
+    (secret) => `${secret.slice(0, 4)}…`,
+  );
+
+  // Bearer values use the HTTP-token subset accepted here, with horizontal whitespace around
+  // the case-insensitive Bearer scheme. The header spelling and whitespace are left byte-identical.
+  return redactedTokens.replace(
+    /(Authorization:[\t ]+Bearer[\t ]+)([A-Za-z0-9._~+/=-]{8,})(?![A-Za-z0-9._~+/=-])/gi,
+    (_match, prefix: string, secret: string) => `${prefix}${secret.slice(0, 4)}…`,
+  );
+}
+
 /** Replaces all effective-home occurrences inside a diagnostic string. */
 export function shortenHomeInString(input: string): string {
   if (!input) {
